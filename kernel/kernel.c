@@ -3,7 +3,7 @@
 #include "drivers/uart.h"
 #include "kernel/timer.h"
 #include "kernel/task.h"
-#include "shell/shell.h"
+#include "kernel/scheduler.h"
 
 void kernel_main(void)
 {
@@ -18,10 +18,14 @@ void kernel_main(void)
     sei();
 
     /* Populates the task table so the shell's `tasks` command has
-     * something to show. There is no scheduler yet (Milestone 12) — this
-     * does not change control flow below; shell_run() is still called
-     * directly and still never returns. */
+     * something to show, and so the scheduler below has tasks to
+     * switch between. */
     task_init();
 
-    shell_run();
+    /* Milestone 12: real cooperative multitasking. scheduler_init()
+     * builds task 2/3's kmalloc()'d stacks and fake initial frames;
+     * scheduler_run() starts task 1 (the shell) directly and never
+     * returns, same as the direct shell_run() call it replaces. */
+    scheduler_init();
+    scheduler_run();
 }

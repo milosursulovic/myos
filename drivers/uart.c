@@ -2,6 +2,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
+#include "kernel/scheduler.h"
 
 #define UART_BAUD 9600UL
 
@@ -88,8 +89,21 @@ char uart_getc(void)
      * store is one instruction and can't be torn by an interrupt landing
      * mid-access. This is a classic single-producer (ISR writes rx_head),
      * single-consumer (this function reads/writes rx_tail) lock-free ring
-     * buffer, so no cli()/SREG masking is needed here. */
+     * buffer, so no cli()/SREG masking is needed here.
+     *
+     * Milestone 12: calls task_yield() every iteration instead of pure
+     * busy-spin. This is what makes the cooperative scheduler's headline
+     * demo work at all -- without it, task 1 (the shell) would hog the
+     * CPU forever the moment it blocks here waiting for a keystroke, and
+     * task 2/3 (LED, system service) would never get to run. It's safe
+     * because rx_head/rx_tail are still read fresh on every loop
+     * iteration after control returns from task_yield() (a full round
+     * trip through every other task and back), exactly as if this were
+     * still a plain busy-spin -- yielding doesn't change what condition
+     * this loop is waiting on or how it's checked, only who else gets to
+     * run while it's blocked. */
     while (rx_head == rx_tail) {
+        task_yield();
     }
 
     c = rx_buf[rx_tail];

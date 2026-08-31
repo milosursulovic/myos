@@ -102,7 +102,7 @@ myos/
 - [x] 9. UART interrupts — RX interrupt + ring buffer, replaces polling (hardware-verified)
 - [x] 10. Memory manager — `kmalloc`/`kfree`, `mem` shell command (hardware-verified)
 - [x] 11. Tasks — `task_t`, a few initial tasks (shell, LED, system service), `tasks` shell command (hardware-verified)
-- [ ] 12. Scheduler (cooperative) — `scheduler_init/run`, `task_yield()`
+- [x] 12. Scheduler (cooperative) — `scheduler_init/run`, `task_yield()`, hand-written AVR context switch (hardware-verified: LED blinks live at idle prompt)
 - [ ] 13. Scheduler (preemptive) — timer-interrupt-driven context switch
 - [ ] 14. Custom bootloader — drop Optiboot dependency, MyOS's own
       bootloader + Flash self-programming + custom update protocol +

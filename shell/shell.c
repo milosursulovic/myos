@@ -169,12 +169,13 @@ static void cmd_mem(void)
 }
 
 /* Prints a task's state as text where known, falling back to the raw
- * numeric value for anything else (only TASK_STATE_READY exists so far —
- * see kernel/task.h). */
+ * numeric value for anything else — see kernel/task.h. */
 static void print_task_state(unsigned char state)
 {
     if (state == TASK_STATE_READY) {
         uart_puts_P(PSTR("READY"));
+    } else if (state == TASK_STATE_RUNNING) {
+        uart_puts_P(PSTR("RUNNING"));
     } else {
         uart_put_uint(state);
     }
