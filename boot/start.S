@@ -14,12 +14,12 @@
  * `rjmp` — confirmed against actual avr-gcc output for this MCU, not
  * assumed. 26 vectors, byte offsets 0x00-0x64, table ends at 0x68.
  *
- * All vectors except RESET (0x00) and TIMER0_COMPA (0x38) point at
- * `bad_interrupt`. `TIMER0_COMPA_vect` is the macro from <avr/io.h> that
- * expands to whatever internal symbol name avr-libc's `ISR()` macro
- * generates in kernel/timer.c (e.g. `__vector_14`) — writing the macro
- * name here instead of hardcoding that symbol keeps the two sides in sync
- * automatically. */
+ * All vectors except RESET (0x00), TIMER0_COMPA (0x38), and USART_RX
+ * (0x48) point at `bad_interrupt`. `TIMER0_COMPA_vect`/`USART_RX_vect` are
+ * macros from <avr/io.h> that expand to whatever internal symbol name
+ * avr-libc's `ISR()` macro generates on the C side (e.g. `__vector_14`) —
+ * writing the macro name here instead of hardcoding that symbol keeps the
+ * two sides in sync automatically. */
     jmp _start           /* 0x00 RESET */
     jmp bad_interrupt     /* 0x04 INT0 */
     jmp bad_interrupt     /* 0x08 INT1 */
@@ -38,7 +38,7 @@
     jmp bad_interrupt     /* 0x3C TIMER0_COMPB */
     jmp bad_interrupt     /* 0x40 TIMER0_OVF */
     jmp bad_interrupt     /* 0x44 SPI_STC */
-    jmp bad_interrupt     /* 0x48 USART_RX */
+    jmp USART_RX_vect     /* 0x48 USART_RX */
     jmp bad_interrupt     /* 0x4C USART_UDRE */
     jmp bad_interrupt     /* 0x50 USART_TX */
     jmp bad_interrupt     /* 0x54 ADC */
@@ -47,12 +47,12 @@
     jmp bad_interrupt     /* 0x60 TWI */
     jmp bad_interrupt     /* 0x64 SPM_READY */
 
-/* Trap for any interrupt that should never fire. Only OCIE0A is ever set
- * in TIMSK0 (see kernel/timer.c), so only TIMER0_COMPA is a legitimate
- * interrupt source — if any other vector fires, it's a bug. Hanging here
- * conspicuously (instead of avr-libc's default of silently resetting via
- * an unhandled-vector jump to 0x0000) makes that bug observable rather
- * than hidden. */
+/* Trap for any interrupt that should never fire. Only OCIE0A (TIMSK0, see
+ * kernel/timer.c) and RXCIE0 (UCSR0B, see drivers/uart.c) are ever set, so
+ * only TIMER0_COMPA and USART_RX are legitimate interrupt sources — if any
+ * other vector fires, it's a bug. Hanging here conspicuously (instead of
+ * avr-libc's default of silently resetting via an unhandled-vector jump to
+ * 0x0000) makes that bug observable rather than hidden. */
 bad_interrupt:
     rjmp bad_interrupt
 

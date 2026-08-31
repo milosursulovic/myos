@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
 
@@ -10,14 +11,30 @@
  */
 #define UART_UBRR ((F_CPU / (16UL * UART_BAUD)) - 1)
 
+/* RX ring buffer (Milestone 9): USART_RX_vect (the producer) writes at
+ * rx_head, uart_getc() (the consumer) reads from rx_tail. Size must be a
+ * power of 2 — index wraparound is done with `& (RX_BUF_SIZE - 1)` instead
+ * of `% RX_BUF_SIZE`, which is only equivalent to modulo for a power-of-2
+ * size (it works because masking off the high bits of a power-of-2 divisor
+ * discards exactly one full period). 16 bytes is plenty: it only needs to
+ * smooth over the handful of characters typed between two calls to
+ * uart_getc() from the shell, and keeps the footprint small on a 2KB-SRAM
+ * part. */
+#define RX_BUF_SIZE 16
+#define RX_BUF_MASK (RX_BUF_SIZE - 1)
+
+static volatile unsigned char rx_buf[RX_BUF_SIZE];
+static volatile unsigned char rx_head; /* next slot the ISR will write */
+static volatile unsigned char rx_tail; /* next slot uart_getc() will read */
+
 void uart_init(void)
 {
     /* Set baud rate. */
     UBRR0H = (uint8_t)(UART_UBRR >> 8);
     UBRR0L = (uint8_t)(UART_UBRR & 0xFF);
 
-    /* Enable receiver and transmitter. */
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+    /* Enable receiver, transmitter, and the RX Complete interrupt. */
+    UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
     /* Frame format: 8 data bits, no parity, 1 stop bit (8N1). */
     UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
@@ -48,10 +65,38 @@ void uart_puts_P(const char *str)
 
 char uart_getc(void)
 {
-    /* Block until a byte has been received. */
-    while (!(UCSR0A & (1 << RXC0))) {
+    unsigned char c;
+
+    /* Block until the ISR has placed a byte in the ring buffer. Must NOT
+     * disable interrupts while waiting — the ISR is what advances rx_head,
+     * so masking interrupts here would hang forever on an empty buffer.
+     *
+     * rx_head and rx_tail are single unsigned char values, not multi-byte
+     * like timer.c's system_ticks — on an 8-bit CPU a single-byte load or
+     * store is one instruction and can't be torn by an interrupt landing
+     * mid-access. This is a classic single-producer (ISR writes rx_head),
+     * single-consumer (this function reads/writes rx_tail) lock-free ring
+     * buffer, so no cli()/SREG masking is needed here. */
+    while (rx_head == rx_tail) {
     }
-    return (char)UDR0;
+
+    c = rx_buf[rx_tail];
+    rx_tail = (rx_tail + 1) & RX_BUF_MASK;
+    return (char)c;
+}
+
+ISR(USART_RX_vect)
+{
+    unsigned char c = UDR0; /* also clears RXC0 — must always be read */
+    unsigned char next_head = (rx_head + 1) & RX_BUF_MASK;
+
+    /* Drop the byte silently if the buffer is full. There's no
+     * error-reporting channel back to the sender, and an ISR can't block
+     * waiting for uart_getc() to make room. */
+    if (next_head != rx_tail) {
+        rx_buf[rx_head] = c;
+        rx_head = next_head;
+    }
 }
 
 void uart_put_uint(unsigned int n)
