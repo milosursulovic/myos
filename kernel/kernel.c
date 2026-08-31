@@ -14,5 +14,7 @@ void kernel_main(void)
     uart_puts_P(PSTR("myos>"));
 
     for (;;) {
+        char c = uart_getc();
+        uart_putc(c);
     }
 }
