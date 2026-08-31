@@ -10,5 +10,6 @@ void uart_puts(const char *str);      /* str lives in RAM (e.g. a buffer). */
 void uart_puts_P(const char *str);    /* str lives in flash (PROGMEM/PSTR). */
 char uart_getc(void);
 void uart_put_uint(unsigned int n);   /* prints n as decimal ASCII digits. */
+void uart_put_ulong(unsigned long n); /* prints n as decimal ASCII digits. */
 
 #endif /* MYOS_UART_H */

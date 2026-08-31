@@ -76,3 +76,25 @@ void uart_put_uint(unsigned int n)
         uart_putc(digits[--i]);
     }
 }
+
+void uart_put_ulong(unsigned long n)
+{
+    /* Same manual decimal conversion as uart_put_uint(), sized for a
+     * 32-bit value. Widest is "4294967295" (10 digits). */
+    char digits[10];
+    unsigned char i = 0;
+
+    if (n == 0) {
+        uart_putc('0');
+        return;
+    }
+
+    while (n > 0) {
+        digits[i++] = (char)('0' + (n % 10));
+        n /= 10;
+    }
+
+    while (i > 0) {
+        uart_putc(digits[--i]);
+    }
+}

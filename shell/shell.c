@@ -2,6 +2,7 @@
 #include "shell.h"
 #include "drivers/gpio.h"
 #include "drivers/uart.h"
+#include "kernel/timer.h"
 
 /* Fixed-size line buffer. 32 bytes is generous for a shell command plus a
  * short argument on a 2KB-SRAM device without being wasteful; input beyond
@@ -53,6 +54,7 @@ static void cmd_help(void)
     uart_puts_P(PSTR("info\r\n"));
     uart_puts_P(PSTR("echo\r\n"));
     uart_puts_P(PSTR("gpio\r\n"));
+    uart_puts_P(PSTR("uptime\r\n"));
 }
 
 static void cmd_info(void)
@@ -123,6 +125,19 @@ static void cmd_gpio(const char *args)
     }
 }
 
+static void cmd_uptime(void)
+{
+    unsigned long ticks = timer_get_ticks();
+
+    uart_puts_P(PSTR("Ticks: "));
+    uart_put_ulong(ticks);
+    uart_puts_P(PSTR("\r\n"));
+
+    uart_puts_P(PSTR("Uptime: "));
+    uart_put_ulong(ticks / 1000);
+    uart_puts_P(PSTR(" seconds\r\n"));
+}
+
 static void cmd_unknown(const char *name)
 {
     uart_puts_P(PSTR("Unknown command: "));
@@ -163,6 +178,8 @@ static void dispatch(char *line)
         cmd_echo(args);
     } else if (str_eq_p(cmd, PSTR("gpio"))) {
         cmd_gpio(args);
+    } else if (str_eq_p(cmd, PSTR("uptime"))) {
+        cmd_uptime();
     } else {
         cmd_unknown(cmd);
     }
