@@ -1,9 +1,11 @@
 #include <avr/pgmspace.h>
+#include <stddef.h>
 #include "shell.h"
 #include "drivers/gpio.h"
 #include "drivers/uart.h"
 #include "kernel/timer.h"
 #include "kernel/memory.h"
+#include "kernel/task.h"
 
 /* Fixed-size line buffer. 32 bytes is generous for a shell command plus a
  * short argument on a 2KB-SRAM device without being wasteful; input beyond
@@ -60,6 +62,7 @@ static void cmd_help(void)
     uart_puts_P(PSTR("gpio\r\n"));
     uart_puts_P(PSTR("uptime\r\n"));
     uart_puts_P(PSTR("mem\r\n"));
+    uart_puts_P(PSTR("tasks\r\n"));
 }
 
 static void cmd_info(void)
@@ -165,6 +168,39 @@ static void cmd_mem(void)
     uart_puts_P(PSTR("\r\n"));
 }
 
+/* Prints a task's state as text where known, falling back to the raw
+ * numeric value for anything else (only TASK_STATE_READY exists so far —
+ * see kernel/task.h). */
+static void print_task_state(unsigned char state)
+{
+    if (state == TASK_STATE_READY) {
+        uart_puts_P(PSTR("READY"));
+    } else {
+        uart_put_uint(state);
+    }
+}
+
+static void cmd_tasks(void)
+{
+    unsigned char count = task_count();
+    unsigned char i;
+
+    uart_puts_P(PSTR("ID  STATE\r\n"));
+
+    for (i = 0; i < count; i++) {
+        const task_t *t = task_get(i);
+
+        if (t == NULL) {
+            continue;
+        }
+
+        uart_put_uint(t->id);
+        uart_puts_P(PSTR("   "));
+        print_task_state(t->state);
+        uart_puts_P(PSTR("\r\n"));
+    }
+}
+
 static void cmd_unknown(const char *name)
 {
     uart_puts_P(PSTR("Unknown command: "));
@@ -209,6 +245,8 @@ static void dispatch(char *line)
         cmd_uptime();
     } else if (str_eq_p(cmd, PSTR("mem"))) {
         cmd_mem();
+    } else if (str_eq_p(cmd, PSTR("tasks"))) {
+        cmd_tasks();
     } else {
         cmd_unknown(cmd);
     }

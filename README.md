@@ -101,7 +101,7 @@ myos/
 - [x] 8. Interrupt system — vector table, ISRs, global interrupt enable (hardware-verified, built on Milestone 7's work)
 - [x] 9. UART interrupts — RX interrupt + ring buffer, replaces polling (hardware-verified)
 - [x] 10. Memory manager — `kmalloc`/`kfree`, `mem` shell command (hardware-verified)
-- [ ] 11. Tasks — `task_t`, a few initial tasks (shell, LED, system service)
+- [x] 11. Tasks — `task_t`, a few initial tasks (shell, LED, system service), `tasks` shell command (hardware-verified)
 - [ ] 12. Scheduler (cooperative) — `scheduler_init/run`, `task_yield()`
 - [ ] 13. Scheduler (preemptive) — timer-interrupt-driven context switch
 - [ ] 14. Custom bootloader — drop Optiboot dependency, MyOS's own
