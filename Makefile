@@ -22,13 +22,19 @@ CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os -Wall -Wextra -std=gnu99 \
 ASFLAGS = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Iinclude -I.
 LDFLAGS = -mmcu=$(MCU) -nostartfiles -nodefaultlibs \
           -Wl,-T,linker.ld -Wl,--gc-sections -Wl,-Map,build/myos.map
+# libgcc provides the compiler's software arithmetic helpers (e.g. integer
+# division on AVR, which has no hardware divide instruction) — it's the
+# compiler runtime, not avr-libc/libc, so it stays linked even with
+# -nodefaultlibs. Must come after $(OBJS) so the linker resolves symbols
+# the objects reference (library search is left-to-right).
+LDLIBS  = -lgcc
 
 .PHONY: all size flash clean
 
 all: build/myos.hex size
 
 build/myos.elf: $(OBJS) linker.ld | build
-	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 build/myos.hex: build/myos.elf
 	$(OBJCOPY) -O ihex -R .eeprom $< $@

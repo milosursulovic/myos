@@ -53,3 +53,26 @@ char uart_getc(void)
     }
     return (char)UDR0;
 }
+
+void uart_put_uint(unsigned int n)
+{
+    /* Manual decimal conversion (no snprintf/itoa — avr-libc isn't linked).
+     * Digits come out least-significant-first, so they're buffered and
+     * then emitted in reverse. Widest 16-bit value is "65535" (5 digits). */
+    char digits[5];
+    unsigned char i = 0;
+
+    if (n == 0) {
+        uart_putc('0');
+        return;
+    }
+
+    while (n > 0) {
+        digits[i++] = (char)('0' + (n % 10));
+        n /= 10;
+    }
+
+    while (i > 0) {
+        uart_putc(digits[--i]);
+    }
+}

@@ -1,5 +1,6 @@
 #include <avr/pgmspace.h>
 #include "shell.h"
+#include "drivers/gpio.h"
 #include "drivers/uart.h"
 
 /* Fixed-size line buffer. 32 bytes is generous for a shell command plus a
@@ -51,6 +52,7 @@ static void cmd_help(void)
     uart_puts_P(PSTR("help\r\n"));
     uart_puts_P(PSTR("info\r\n"));
     uart_puts_P(PSTR("echo\r\n"));
+    uart_puts_P(PSTR("gpio\r\n"));
 }
 
 static void cmd_info(void)
@@ -68,6 +70,57 @@ static void cmd_echo(const char *args)
 {
     uart_puts(args);
     uart_puts_P(PSTR("\r\n"));
+}
+
+static void cmd_gpio_usage(void)
+{
+    uart_puts_P(PSTR("Usage: gpio <pin> on|off\r\n"));
+}
+
+/* Parses "<pin> on" / "<pin> off" out of args (pin is decimal digits only,
+ * no strtol available) and drives the pin accordingly. Anything malformed
+ * (non-numeric or out-of-range pin, missing/unrecognized mode token)
+ * prints a usage message instead of guessing. */
+static void cmd_gpio(const char *args)
+{
+    unsigned int pin = 0;
+    unsigned char has_digit = 0;
+
+    while (*args == ' ') {
+        args++;
+    }
+
+    while (*args >= '0' && *args <= '9') {
+        pin = (unsigned int)(pin * 10 + (unsigned char)(*args - '0'));
+        has_digit = 1;
+        args++;
+        if (pin > 13) {
+            break;
+        }
+    }
+
+    while (*args == ' ') {
+        args++;
+    }
+
+    if (!has_digit || pin > 13 || *args == '\0') {
+        cmd_gpio_usage();
+        return;
+    }
+
+    if (str_eq_p(args, PSTR("on"))) {
+        gpio_set((unsigned char)pin);
+        uart_puts_P(PSTR("GPIO "));
+        uart_put_uint(pin);
+        uart_puts_P(PSTR(": ON\r\n"));
+    } else if (str_eq_p(args, PSTR("off"))) {
+        gpio_clear((unsigned char)pin);
+        uart_puts_P(PSTR("GPIO "));
+        uart_put_uint(pin);
+        uart_puts_P(PSTR(": OFF\r\n"));
+    } else {
+        cmd_gpio_usage();
+    }
 }
 
 static void cmd_unknown(const char *name)
@@ -108,6 +161,8 @@ static void dispatch(char *line)
         cmd_info();
     } else if (str_eq_p(cmd, PSTR("echo"))) {
         cmd_echo(args);
+    } else if (str_eq_p(cmd, PSTR("gpio"))) {
+        cmd_gpio(args);
     } else {
         cmd_unknown(cmd);
     }
