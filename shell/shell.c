@@ -3,6 +3,7 @@
 #include "drivers/gpio.h"
 #include "drivers/uart.h"
 #include "kernel/timer.h"
+#include "kernel/memory.h"
 
 /* Fixed-size line buffer. 32 bytes is generous for a shell command plus a
  * short argument on a 2KB-SRAM device without being wasteful; input beyond
@@ -12,6 +13,9 @@
 #define BACKSPACE 0x08
 #define DELETE    0x7F
 #define ENTER     '\r'
+
+/* Matches CLAUDE.md's hardware table (ATmega328P: 2048 bytes SRAM). */
+#define RAM_TOTAL_BYTES 2048
 
 static char line_buf[LINE_MAX];
 
@@ -55,6 +59,7 @@ static void cmd_help(void)
     uart_puts_P(PSTR("echo\r\n"));
     uart_puts_P(PSTR("gpio\r\n"));
     uart_puts_P(PSTR("uptime\r\n"));
+    uart_puts_P(PSTR("mem\r\n"));
 }
 
 static void cmd_info(void)
@@ -138,6 +143,28 @@ static void cmd_uptime(void)
     uart_puts_P(PSTR(" seconds\r\n"));
 }
 
+/* Free/used are derived from kmem_free_bytes() so they always sum to
+ * exactly RAM_TOTAL_BYTES, matching the spec's own example (320 + 1728 =
+ * 2048) — there's no separately-tracked "sum of allocated bytes" that
+ * could drift out of sync with the allocator's own notion of free space. */
+static void cmd_mem(void)
+{
+    unsigned int free_bytes = kmem_free_bytes();
+    unsigned int used_bytes = RAM_TOTAL_BYTES - free_bytes;
+
+    uart_puts_P(PSTR("RAM total: "));
+    uart_put_uint(RAM_TOTAL_BYTES);
+    uart_puts_P(PSTR("\r\n"));
+
+    uart_puts_P(PSTR("Used:      "));
+    uart_put_uint(used_bytes);
+    uart_puts_P(PSTR("\r\n"));
+
+    uart_puts_P(PSTR("Free:      "));
+    uart_put_uint(free_bytes);
+    uart_puts_P(PSTR("\r\n"));
+}
+
 static void cmd_unknown(const char *name)
 {
     uart_puts_P(PSTR("Unknown command: "));
@@ -180,6 +207,8 @@ static void dispatch(char *line)
         cmd_gpio(args);
     } else if (str_eq_p(cmd, PSTR("uptime"))) {
         cmd_uptime();
+    } else if (str_eq_p(cmd, PSTR("mem"))) {
+        cmd_mem();
     } else {
         cmd_unknown(cmd);
     }
