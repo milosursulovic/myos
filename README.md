@@ -88,7 +88,7 @@ myos/
 
 ## Milestone roadmap
 
-- [x] **1. Kernel boot** — boots via Optiboot into `kernel_main()`, hangs in
+- [ ] **1. Kernel boot** — boots via Optiboot into `kernel_main()`, hangs in
       an infinite loop (build-verified; hardware test pending)
 - [ ] 2. UART — `uart_init/putc/puts/getc`, 9600 8N1
 - [ ] 3. First kernel output — prints the MyOS banner on boot
