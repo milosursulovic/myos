@@ -47,5 +47,10 @@ driver works end-to-end: a character sent from the host makes it into
    ATmega328P at a time). Enter/backspace produce whatever raw control
    byte the terminal sends, echoed as-is — there is no line editing yet.
 
-**Status:** build-verified only. Hardware test pending (needs a physical
-Uno) — required before this milestone counts as done per `CLAUDE.md`.
+**Status:** superseded, not independently re-testable as literally
+described. Milestone 5 replaced this raw echo loop with the shell's
+line-buffered `read_line()`, so `kernel_main()` no longer contains a bare
+`uart_getc()`/`uart_putc()` loop to test in isolation. The underlying
+`uart_getc()`/`uart_putc()` primitives this milestone introduced are
+hardware-verified as of 2026-08-31 through every later milestone's shell
+session (see `docs/shell.md`), which exercises them continuously.

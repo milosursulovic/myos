@@ -88,19 +88,19 @@ myos/
 
 ## Milestone roadmap
 
-- [ ] **1. Kernel boot** — boots via Optiboot into `kernel_main()`, hangs in
-      an infinite loop (build-verified; hardware test pending)
-- [ ] 2. UART — `uart_init/putc/puts/getc`, 9600 8N1
-- [ ] 3. First kernel output — prints the MyOS banner on boot
-- [ ] 4. UART input — echoes received characters
-- [ ] 5. Shell — command parser (`help`, `info`, `uptime`, `mem`, `gpio`,
-      `echo`, `reboot`)
-- [ ] 6. GPIO — `gpio_init/set/clear/read`
-- [ ] 7. Timer — hardware timer, `system_ticks`, `timer_get_ticks()`,
-      `uptime` shell command
-- [ ] 8. Interrupt system — vector table, ISRs, global interrupt enable
-- [ ] 9. UART interrupts — RX interrupt + ring buffer, replaces polling
-- [ ] 10. Memory manager — `kmalloc`/`kfree`, `mem` shell command
+- [x] **1. Kernel boot** — boots via Optiboot into `kernel_main()`, hangs in
+      an infinite loop (hardware-verified)
+- [x] 2. UART — `uart_init/putc/puts/getc`, 9600 8N1 (hardware-verified)
+- [x] 3. First kernel output — prints the MyOS banner on boot (hardware-verified)
+- [x] 4. UART input — echoes received characters (hardware-verified; superseded by Milestone 9's interrupt-driven RX)
+- [x] 5. Shell — command parser (`help`, `info`, `echo`, `gpio`, `uptime`,
+      `mem` implemented so far; `reboot` lands with Milestone 33/watchdog) (hardware-verified)
+- [x] 6. GPIO — `gpio_init/set/clear/read`, shell `gpio <pin> on|off` (hardware-verified)
+- [x] 7. Timer — hardware timer, `system_ticks`, `timer_get_ticks()`,
+      `uptime` shell command (hardware-verified)
+- [x] 8. Interrupt system — vector table, ISRs, global interrupt enable (hardware-verified, built on Milestone 7's work)
+- [x] 9. UART interrupts — RX interrupt + ring buffer, replaces polling (hardware-verified)
+- [x] 10. Memory manager — `kmalloc`/`kfree`, `mem` shell command (hardware-verified)
 - [ ] 11. Tasks — `task_t`, a few initial tasks (shell, LED, system service)
 - [ ] 12. Scheduler (cooperative) — `scheduler_init/run`, `task_yield()`
 - [ ] 13. Scheduler (preemptive) — timer-interrupt-driven context switch

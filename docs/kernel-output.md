@@ -73,5 +73,8 @@ root-relative rather than a fragile `../drivers/uart.h` relative to
    printed once, with no further output afterward (the kernel loops
    forever with nothing left to do).
 
-**Status:** build-verified only. Hardware test pending (needs a physical
-Uno) — required before this milestone counts as done per `CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31) — the exact banner text above
+was observed verbatim over a real serial session at 9600 8N1. Note: as of
+Milestone 5, the banner is followed by the `myos>` shell prompt and the
+shell actively reads commands, rather than the kernel idling forever with
+"no further output" as this doc originally described — see `docs/shell.md`.

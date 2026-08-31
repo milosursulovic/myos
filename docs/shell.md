@@ -90,5 +90,9 @@ strings that aren't compile-time constants: the user's own argument buffer
    what actually gets dispatched. Press Backspace with an empty line —
    expect no visible effect and no crash.
 
-**Status:** build-verified only. Hardware test pending (needs a physical
-Uno) — required before this milestone counts as done per `CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31) over real serial at 9600 8N1:
+`help`/`info`/`echo`/`gpio`/`uptime`/`mem` all dispatch correctly, unknown
+commands print the expected message, backspace correctly erases a
+character both on-screen and from the dispatched line (`helpx` +
+backspace + ENTER ran `help`), and backspace on an empty line is a
+harmless no-op (no crash/hang).

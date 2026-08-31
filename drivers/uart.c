@@ -16,11 +16,23 @@
  * power of 2 — index wraparound is done with `& (RX_BUF_SIZE - 1)` instead
  * of `% RX_BUF_SIZE`, which is only equivalent to modulo for a power-of-2
  * size (it works because masking off the high bits of a power-of-2 divisor
- * discards exactly one full period). 16 bytes is plenty: it only needs to
- * smooth over the handful of characters typed between two calls to
- * uart_getc() from the shell, and keeps the footprint small on a 2KB-SRAM
- * part. */
-#define RX_BUF_SIZE 16
+ * discards exactly one full period).
+ *
+ * 64 bytes (63 usable — one slot is always kept empty to distinguish full
+ * from empty). Bumped up from an initial 16 after hardware testing showed
+ * that pasting several full commands into the shell at once (no gap
+ * between them) can overflow a 16-byte buffer: TX is still polling/blocking
+ * (see uart_putc()), so while the shell is busy printing one command's
+ * response, it isn't calling uart_getc() at all, and more input keeps
+ * arriving via the RX ISR in the meantime. A 140-byte response (the
+ * longest — "info") takes ~140ms to transmit at 9600 baud, during which
+ * ~140 bytes of pasted input could theoretically arrive; 64 bytes doesn't
+ * cover that absolute worst case, but comfortably covers realistic
+ * multi-command pastes and normal typing, at a modest 48-byte extra SRAM
+ * cost. The only complete fix would be making TX interrupt-driven too
+ * (out of Milestone 9's scope, which is RX-only per the spec) — this
+ * remains a known, accepted limitation, not something eliminated. */
+#define RX_BUF_SIZE 64
 #define RX_BUF_MASK (RX_BUF_SIZE - 1)
 
 static volatile unsigned char rx_buf[RX_BUF_SIZE];

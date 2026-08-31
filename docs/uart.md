@@ -71,5 +71,7 @@ there is no on-hardware behavior to observe yet.
    `screen /dev/ttyACM0 9600` or similar) and confirm the expected text
    appears at 9600 8N1 after reset.
 
-**Status:** build-verified only. On-hardware testing happens once this
-driver is wired up in Milestone 3.
+**Status:** hardware-verified (2026-08-31) — confirmed at 9600 8N1 over
+`/dev/ttyUSB0` via every later milestone's shell session (banner, echo,
+shell command output all round-trip correctly). Note RX is no longer
+polling-based as of Milestone 9 — see `docs/uart-rx-interrupt.md`.

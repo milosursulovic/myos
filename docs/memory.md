@@ -148,8 +148,12 @@ Deeper allocator testing (actual `kmalloc`/`kfree` calls, split/coalesce
 behavior, the collision check under real stack pressure) will happen
 naturally once Milestone 11 (Tasks) starts actually calling `kmalloc`.
 
-**Status:** build-verified only (clean `make`, hand-traced allocator logic
-for sequential allocation, free-then-reallocate, free-and-coalesce, and a
-rejected allocation under the stack-collision check — see commit/PR
-notes). Hardware test pending (needs a physical Uno) — required before
-this milestone counts as done per `CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31) at the `mem` command level —
+`RAM total: 2048 / Used: ... / Free: ...` observed over real serial always
+sums to 2048 exactly, as expected (exact split shifts slightly with SRAM
+usage elsewhere, e.g. Milestone 9's RX buffer size). Nothing calls
+`kmalloc`/`kfree` yet, so this
+confirms `kmem_free_bytes()` and the shell wiring, not the allocator's
+split/coalesce/collision-check logic itself — that's covered by the
+hand-traced logic below plus code review, and gets real exercise once
+Milestone 11 (Tasks) starts calling `kmalloc`.

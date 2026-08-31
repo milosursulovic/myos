@@ -115,6 +115,9 @@ exactly — the spec's own example: 12345 ticks -> 12 seconds).
    work as before — enabling the timer interrupt shouldn't disturb
    anything else.
 
-**Status:** build-verified only (clean `make`, disassembly-verified vector
-table). Hardware test pending (needs a physical Uno) — required before
-this milestone counts as done per `CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31). Two `uptime` calls 6.171
+wall-clock seconds apart (measured on the host) showed a tick delta of
+6172 — 1000.16 Hz, within 0.02% of the intended 1kHz, well inside crystal
+tolerance and host-side timing jitter. Confirms the CTC/prescaler/OCR0A
+math and the ISR actually fire at the correct rate on real hardware, not
+just in disassembly.

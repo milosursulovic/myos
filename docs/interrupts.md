@@ -75,5 +75,5 @@ practical verification for this milestone too, since it's the same
 infrastructure.
 
 **Status:** documentation-only milestone, no code changes. Milestone 7's
-hardware test (still pending) covers this infrastructure's actual
-behavior.
+`uptime` command was hardware-verified on 2026-08-31 (see `docs/timer.md`),
+covering this infrastructure's actual behavior.

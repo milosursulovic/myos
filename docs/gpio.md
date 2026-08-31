@@ -92,5 +92,10 @@ though `gpio_read()` is implemented as part of the required driver API.
    crash or hang.
 6. Type `help` — expect `gpio` listed alongside `help`, `info`, `echo`.
 
-**Status:** build-verified only. Hardware test pending (needs a physical
-Uno) — required before this milestone counts as done per `CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31) at the command level — `gpio 13
+on`/`gpio 13 off`/malformed input all produced exactly the expected shell
+output over a real serial session with no crash or hang. The physical LED
+toggle itself wasn't visually confirmed in that session (no camera on the
+board); combined with the DDRB/PORTB register writes already confirmed
+correct via disassembly in review, confidence is high, but a visual check
+of the onboard LED is worth doing if anyone wants full closure.

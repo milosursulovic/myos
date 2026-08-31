@@ -38,4 +38,7 @@ by `_start` and never expected to return.
    then go idle, not blink repeatedly) — a genuine boot loop would indicate
    `_start` isn't landing at address 0 or the reset vector setup is wrong.
 
-**Status:** build-verified. Hardware test pending (needs a physical Uno).
+**Status:** hardware-verified (2026-08-31). Confirmed indirectly but
+conclusively — the board boots reliably and every later milestone's shell
+session over `/dev/ttyUSB0` at 9600 8N1 works, which is only possible if
+`_start` lands at address 0 and `kernel_main()` is reached correctly.

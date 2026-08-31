@@ -113,8 +113,19 @@ needed there.
    through this same RX path: `help`, `info`, `echo <text>`,
    `gpio <pin> on|off`, `uptime`.
 
-**Status:** build-verified only (clean `make`, disassembly-verified vector
-table — offset `0x48` jumps to the same `__vector_18` address as
-`ISR(USART_RX_vect)` in `drivers/uart.c`). Hardware test pending (needs a
-physical Uno) — required before this milestone counts as done per
-`CLAUDE.md`.
+**Status:** hardware-verified (2026-08-31). Under normal interactive typing
+(one command, wait for its response, next command), every shell command
+worked flawlessly across extensive testing. Under an adversarial test —
+several full commands with embedded ENTERs sent as one unpaced burst (as a
+fast paste into a terminal would) — the original 16-byte buffer *did*
+lose characters: while `cmd_gpio()`/etc. were blocking on TX (still
+polling, per this milestone's RX-only scope) printing a response,
+`uart_getc()` wasn't being called at all, so a large-enough burst of
+concurrent RX input overflowed the 16-byte buffer and silently dropped
+bytes, corrupting the next line (e.g. `info` merging into the next
+command's name, dispatching as an unknown command). Root cause confirmed,
+not fixed at the root (that would mean making TX interrupt-driven too,
+out of scope here) — mitigated by bumping `RX_BUF_SIZE` from 16 to 64
+(see `drivers/uart.c`), which handles the same burst test cleanly. Still
+an accepted, documented limitation for a pathological-enough paste; not
+reachable at normal human typing speed.
