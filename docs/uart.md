@@ -34,9 +34,28 @@ flags.
 ```c
 void uart_init(void);        // configure USART0 for 9600 8N1
 void uart_putc(char c);      // block until UDRE0, then send one byte
-void uart_puts(const char *str); // send a NUL-terminated string
+void uart_puts(const char *str);   // send a NUL-terminated string from RAM
+void uart_puts_P(const char *str); // send a NUL-terminated string from flash (PROGMEM)
 char uart_getc(void);        // block until RXC0, then return one byte
 ```
+
+### `uart_puts` vs `uart_puts_P`
+
+AVR is a Harvard-architecture MCU: flash and RAM are separate address
+spaces, and a plain C pointer read (`*str`) always compiles to a
+data-space `ld` instruction. `uart_puts()` is correct for a buffer that
+actually lives in RAM (e.g. a future shell input line). It is **not**
+correct for a C string literal, because MyOS's `linker.ld` places
+`.rodata`/`.progmem.data` directly in flash with no copy-to-RAM step at
+boot — a string literal's "address" is really a flash byte offset, and
+reading it with `ld` picks up whatever happens to be at that same address
+in data space (I/O registers, on the ATmega328P, for small offsets).
+
+`uart_puts_P()` is for strings that live in flash — build them with
+`PSTR("...")` from `<avr/pgmspace.h>` — and reads each byte with
+`pgm_read_byte()`, which compiles to `lpm`, the flash-space load
+instruction. Use `uart_puts_P(PSTR("..."))` for any string literal;
+use `uart_puts()` only for a genuine RAM buffer.
 
 ## How to test manually
 

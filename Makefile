@@ -18,8 +18,8 @@ vpath %.c $(SRC_DIRS)
 vpath %.S $(SRC_DIRS)
 
 CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os -Wall -Wextra -std=gnu99 \
-          -ffreestanding -Iinclude
-ASFLAGS = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Iinclude
+          -ffreestanding -Iinclude -I.
+ASFLAGS = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Iinclude -I.
 LDFLAGS = -mmcu=$(MCU) -nostartfiles -nodefaultlibs \
           -Wl,-T,linker.ld -Wl,--gc-sections -Wl,-Map,build/myos.map
 

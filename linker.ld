@@ -23,6 +23,8 @@ SECTIONS
         *(.text.*)
         *(.rodata)
         *(.rodata.*)
+        *(.progmem.data)
+        *(.progmem.data.*)
         _etext = .;
     } > FLASH
 

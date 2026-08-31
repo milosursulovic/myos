@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include "uart.h"
 
 #define UART_BAUD 9600UL
@@ -34,6 +35,14 @@ void uart_puts(const char *str)
 {
     while (*str) {
         uart_putc(*str++);
+    }
+}
+
+void uart_puts_P(const char *str)
+{
+    char c;
+    while ((c = pgm_read_byte(str++))) {
+        uart_putc(c);
     }
 }
 

@@ -6,7 +6,8 @@
 
 void uart_init(void);
 void uart_putc(char c);
-void uart_puts(const char *str);
+void uart_puts(const char *str);      /* str lives in RAM (e.g. a buffer). */
+void uart_puts_P(const char *str);    /* str lives in flash (PROGMEM/PSTR). */
 char uart_getc(void);
 
 #endif /* MYOS_UART_H */
