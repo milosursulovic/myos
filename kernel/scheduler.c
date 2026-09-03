@@ -2,6 +2,7 @@
 #include "scheduler.h"
 #include "kernel/task.h"
 #include "kernel/memory.h"
+#include "kernel/timer.h"
 
 /* Fixed size for each kmalloc()'d task stack (task 2 and task 3 only --
  * task 1 keeps using the boot stack). 128 bytes is generous given both
@@ -28,20 +29,28 @@ static task_t *scheduler_pick_next(void)
 }
 
 /* Builds the fake initial stack frame for a task that has never run yet,
- * so that the FIRST time task_yield()'s restore sequence
- * (kernel/context_switch.S) switches into it, the trailing `ret` jumps
- * straight into t->entry() instead of resuming a real suspended call.
+ * so that the FIRST time context_restore (kernel/context_switch.S)
+ * switches into it, the trailing `ret`/`reti` jumps straight into
+ * t->entry() instead of resuming a real suspended call.
  *
  * Byte layout, from the highest address of the kmalloc()'d block down to
  * the lowest (i.e. in the order a series of real `push` instructions
- * would have left them), must match context_switch.S's save/restore
- * order exactly in reverse:
+ * would have left them), must match context_switch.S's
+ * context_save/context_restore order exactly in reverse. context_save
+ * pushes, in order: r0, SREG (via r0), r1, r2, r3, ..., r31 (33 bytes) --
+ * see that macro's own comment for why ALL 32 registers are saved, not
+ * just the callee-saved subset a plain function call would need (a Timer
+ * preemption can land on any instruction, including code with live
+ * values in caller-saved registers). context_restore pops the exact
+ * reverse: r31..r2, r1, SREG, r0. So the fake frame, highest address
+ * first, is:
  *
  *   [ret addr LOW byte ]   <- highest address (popped LAST, by `ret`)
  *   [ret addr HIGH byte]
- *   [SREG               ]
- *   [r17 .. r2 dummy zero bytes, 16 of them]
- *   [r28, r29 dummy zero bytes]   <- lowest address (popped FIRST)
+ *   [r0 dummy zero byte]   <- context_restore's LAST pop
+ *   [SREG = 0x80        ]
+ *   [r1 dummy zero byte ]
+ *   [r2 .. r31 dummy zero bytes, 30 of them]   <- lowest address (popped FIRST)
  *
  * The two-byte "return address" is deliberately NOT (high, low) in that
  * order -- it is (low, high) here because of how AVR's `call`/`ret`
@@ -81,14 +90,18 @@ static void init_task_stack(task_t *t)
     *sp-- = (unsigned char)(entry_word_addr & 0xFF);        /* ret addr LOW byte  */
     *sp-- = (unsigned char)((entry_word_addr >> 8) & 0xFF);  /* ret addr HIGH byte */
 
+    *sp-- = 0; /* r0 dummy -- context_restore's last pop */
+
     /* SREG: I-bit (0x80) set, so global interrupts already read as
      * enabled the instant this task starts -- matching the rest of the
      * system after kernel_main()'s one-time sei(). */
     *sp-- = 0x80;
 
-    /* r17..r2, then r28, r29: 18 dummy bytes -- nothing real to restore
-     * on a task's very first switch-in, only the byte COUNT matters. */
-    for (i = 0; i < 18; i++) {
+    *sp-- = 0; /* r1 dummy */
+
+    /* r2..r31: 30 dummy bytes -- nothing real to restore on a task's
+     * very first switch-in, only the byte COUNT matters. */
+    for (i = 0; i < 30; i++) {
         *sp-- = 0;
     }
 
@@ -130,18 +143,21 @@ void scheduler_run(void)
     }
 }
 
-/* Called from kernel/context_switch.S's task_yield, after it has already
- * pushed the 19 callee-saved bytes (r2-r17, r28, r29, SREG) onto the
- * currently-running task's stack. current_sp is that post-push stack
- * pointer value; a single pointer-sized argument and pointer-sized
- * return value both travel through r24:r25 (low:high) per the AVR-GCC
- * calling convention -- confirmed empirically against this toolchain
- * (see docs/scheduler.md), not assumed.
+/* Shared round-robin switch bookkeeping, used by BOTH the voluntary path
+ * (task_yield() -> scheduler_switch(), Milestone 12) and the preemptive
+ * path (TIMER0_COMPA_vect -> scheduler_tick(), Milestone 13) -- see
+ * kernel/context_switch.S. current_sp is the just-suspended task's
+ * post-save stack pointer value; a single pointer-sized argument and
+ * pointer-sized return value both travel through r24:r25 (low:high) per
+ * the AVR-GCC calling convention -- confirmed empirically against this
+ * toolchain (see docs/scheduler.md), not assumed.
  *
  * Records current_sp as the now-suspended task's saved sp, advances to
  * the next task round-robin, and returns that task's saved sp so the
- * assembly can load it straight into the real stack pointer. */
-void *scheduler_switch(void *current_sp)
+ * assembly can load it straight into the real stack pointer. Extracted
+ * as its own function (rather than duplicated in both scheduler_switch()
+ * and scheduler_tick()) so the two switch sources can never drift apart. */
+static void *scheduler_do_switch(void *current_sp)
 {
     unsigned char prev_index = current_task_index;
     task_t *current = task_get(prev_index);
@@ -180,5 +196,32 @@ void *scheduler_switch(void *current_sp)
     }
 
     next->state = TASK_STATE_RUNNING;
+
     return next->sp;
+}
+
+/* Called from kernel/context_switch.S's task_yield -- the voluntary
+ * switch path (Milestone 12), unchanged in behavior by Milestone 13's
+ * preemption work beyond now sharing scheduler_do_switch() above with
+ * scheduler_tick(). */
+void *scheduler_switch(void *current_sp)
+{
+    return scheduler_do_switch(current_sp);
+}
+
+/* Called from kernel/context_switch.S's TIMER0_COMPA_vect ISR only --
+ * the preemptive switch path (Milestone 13). Runs with interrupts
+ * disabled (interrupt context), after the ISR has already pushed the
+ * same 19 callee-saved bytes task_yield() pushes.
+ *
+ * Every-tick preemption policy: ticks the system clock, then always
+ * performs the same round-robin advance task_yield() would -- no
+ * separate time-slice counter (see docs/scheduler.md for why this is
+ * the simplest faithful reading of the spec's Timer -> Interrupt -> Save
+ * context -> Scheduler -> Select task -> Restore context -> RETI
+ * diagram). */
+void *scheduler_tick(void *current_sp)
+{
+    timer_tick();
+    return scheduler_do_switch(current_sp);
 }

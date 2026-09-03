@@ -52,7 +52,17 @@ unsigned long timer_get_ticks(void)
     return ticks;
 }
 
-ISR(TIMER0_COMPA_vect)
+/* Called from kernel/context_switch.S's hand-written TIMER0_COMPA_vect ISR
+ * (Milestone 13) -- replaces what used to be a plain ISR(TIMER0_COMPA_vect)
+ * here. AVR only allows one handler per vector, and that vector now also
+ * has to save/restore task context and drive a scheduler switch (see
+ * scheduler_tick() in kernel/scheduler.c), which can't be expressed inside
+ * avr-libc's ISR() macro alongside context_switch.S's shared save/restore
+ * labels. This function is exactly the old ISR body: increment the tick
+ * counter, nothing else. Already running with interrupts disabled (it's
+ * called from interrupt context), so the plain increment is safe without
+ * its own cli()/SREG dance. */
+void timer_tick(void)
 {
     system_ticks++;
 }
