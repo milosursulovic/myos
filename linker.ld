@@ -1,9 +1,14 @@
 /*
  * MyOS linker script — ATmega328P, Phase 1 (Optiboot present).
  *
- * Optiboot on the Uno lives at the top of flash (0x7C00-0x7FFF, 1KB).
- * FLASH length is capped below that so the app image never overlaps it.
- * Once Milestone 14 (custom bootloader) lands, this boundary is revisited.
+ * The stock Arduino Uno Optiboot bootloader only actually needs 512 bytes
+ * (0x7E00-0x7FFF; Arduino's own boards.txt sets upload.maximum_size=32256
+ * = 32768-512) — NOT 1KB, correcting what this comment used to claim.
+ * FLASH length here is capped at 0x7C00 anyway (1KB reserved, more than
+ * Optiboot itself needs) because that's the boot-section boundary Milestone
+ * 14's own custom bootloader targets (BOOTSZ1:0=10, 1KB @ 0x7C00) — see
+ * docs/bootloader.md. Deliberately larger than Optiboot's actual 512-byte
+ * footprint so the app image never overlaps either bootloader.
  */
 
 ENTRY(_start)

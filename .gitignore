@@ -2,4 +2,6 @@ build/*.o
 build/*.elf
 build/*.hex
 build/*.map
+build/*.bin
+build/myos-upload
 .VSCodeCounter/
